@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix OCD Live Lomé · Prise de Rendez-vous Live Commerçants",
+  "description": "Plateforme officielle de réservation de créneaux de live streaming House of Challenge (studio OCD Live à Lomé, Togo) avec régie, paiement, notifications WhatsApp/email et espace commerçant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

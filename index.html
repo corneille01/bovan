@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Compatibility shim for browser extensions/interceptors attempting to assign window.fetch
+      (function() {
+        try {
+          if (typeof window !== 'undefined') {
+            var currentFetch = window.fetch;
+            Object.defineProperty(window, 'fetch', {
+              get: function() {
+                return currentFetch;
+              },
+              set: function(fn) {
+                currentFetch = fn;
+              },
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (_) {}
+      })();
+    </script>
+    <title>OCD Live Lomé - Prise de Rendez-vous Live Commerçants</title>
+    <meta name="description" content="Plateforme officielle de réservation de créneaux de live streaming House of Challenge (studio OCD Live à Lomé, Togo) avec régie, paiement, notifications WhatsApp/email et espace commerçant." />
+    <meta name="keywords" content="OCD Live Lomé, studio House of Challenge, réservation live streaming Togo, diffusion commerçants TikTok Facebook, live shopping Lomé, vente en direct Afrique, studio broadcast e-commerce, BOVAN régie" />
+    <meta name="author" content="House of Challenge - OCD Live Lomé" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <!-- AI Crawlers accessibility directives -->
+    <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
+    <meta name="chatgpt-crawler" content="index, follow" />
+    <meta name="perplexitybot" content="index, follow" />
+    <meta name="claudebot" content="index, follow" />
+
+    <meta property="og:title" content="OCD Live Lomé - Prise de Rendez-vous Live Commerçants" />
+    <meta property="og:description" content="Plateforme officielle de réservation de créneaux de live streaming House of Challenge (studio OCD Live à Lomé, Togo) avec régie, paiement, notifications WhatsApp/email et espace commerçant." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="OCD Live Lomé" />
+    <meta property="og:locale" content="fr_TG" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OCD Live Lomé - Prise de Rendez-vous Live Commerçants" />
+    <meta name="twitter:description" content="Plateforme officielle de réservation de créneaux de live streaming House of Challenge (studio OCD Live à Lomé, Togo) avec régie, paiement, notifications WhatsApp/email et espace commerçant." />
+
+    <!-- Schema.org Structured Data for LLMs and Search Engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "LocalBusiness",
+          "@id": "https://ocd-live.houseofchallenge.tg/#studio",
+          "name": "Studio OCD Live Lomé - House of Challenge",
+          "description": "Studio professionnel de production et de diffusion en direct multi-plateforme (TikTok & Facebook) pour commerçants, restaurateurs et créateurs.",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Boulevard du 13 Janvier",
+            "addressLocality": "Lomé",
+            "addressRegion": "Maritime",
+            "addressCountry": "TG"
+          },
+          "telephone": "+22890001122",
+          "priceRange": "50 000 FCFA - 300 000 FCFA",
+          "currenciesAccepted": "XOF, EUR",
+          "paymentAccepted": "T-Money, Flooz Moov Money, MTN MoMo, Wave, Carte Bancaire",
+          "openingHours": "Mo-Sa 09:00-20:00"
+        },
+        {
+          "@type": "WebApplication",
+          "name": "OCD Live Lomé - Réservation de Live Streaming",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "All",
+          "description": "Application web de réservation de créneaux de diffusion en direct au studio OCD Live à Lomé, avec choix de formule, incrustation régie WhatsApp, synchronisation base de données Neon et double authentification.",
+          "offers": {
+            "@type": "AggregateOffer",
+            "priceCurrency": "XOF",
+            "lowPrice": "50000",
+            "highPrice": "300000"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Comment réserver un créneau de live streaming au Studio OCD Live à Lomé ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Choisissez votre mode (présentiel à Lomé ou à distance), sélectionnez votre pack (Express, Duo, Marathon, Visibilité...), réservez une date et un créneau sans chevauchement, complétez vos coordonnées avec le numéro WhatsApp à afficher à l'écran, puis réglez par T-Money, Flooz, MTN MoMo ou carte."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Comment les commerçants accèdent-ils à leur espace personnel ?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "La connexion est unifiée et sécurisée par code 2FA transmis par email et WhatsApp. Aucun mot de passe vulnérable n'est requis."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300..900;1,300..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-white text-[#1E242B] antialiased selection:bg-[#B84A14] selection:text-white min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
