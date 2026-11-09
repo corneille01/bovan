@@ -12,7 +12,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = parseInt(process.env.PORT || '3000', 10);
-const databaseUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || '';
+const DEFAULT_NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_vFVGKoY6Uq4k@ep-floral-salad-a6szrk76-pooler.us-west-2.aws.neon.tech/bovan?sslmode=require';
+const databaseUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || DEFAULT_NEON_DATABASE_URL;
 
 // Real Email Dispatcher (Resend / Brevo / SMTP / Storage)
 async function sendRealEmail(options: { to: string; subject: string; text: string; html?: string }) {
@@ -272,12 +273,19 @@ async function initNeon() {
   }
 }
 
+async function ensureNeonConnected() {
+  if (!isNeonReady || !sql) {
+    await initNeon();
+  }
+}
+
 initNeon();
 
 // API Routes
 
 // 1. Health & Database Status
 app.get('/api/status', async (_req: Request, res: Response) => {
+  await ensureNeonConnected();
   res.json({
     status: 'ok',
     neonConnected: isNeonReady,
@@ -290,6 +298,7 @@ app.get('/api/status', async (_req: Request, res: Response) => {
 
 // 2. Get Bookings
 app.get('/api/bookings', async (_req: Request, res: Response) => {
+  await ensureNeonConnected();
   if (isNeonReady && sql) {
     try {
       const rows = await sql`SELECT * FROM bookings ORDER BY date ASC, slot_time ASC`;
@@ -337,6 +346,7 @@ app.get('/api/bookings', async (_req: Request, res: Response) => {
 
 // 3. Create or Update Booking
 app.post('/api/bookings', async (req: Request, res: Response) => {
+  await ensureNeonConnected();
   const b = req.body;
   if (!b || !b.id) {
     return res.status(400).json({ error: 'Données de réservation invalides' });
