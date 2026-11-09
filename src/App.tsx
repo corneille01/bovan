@@ -206,11 +206,13 @@ export default function App() {
       emailNotificationSentRegie: true
     };
 
-    // Save in storage
+    // Save in storage & Neon DB
     saveBooking(newBooking);
-    setBookings(getBookings());
-    setAccounts(getUserAccounts());
     setConfirmedBooking(newBooking);
+
+    // Refresh state from Neon DB directly
+    fetchBookingsFromApi().then(bks => { if (bks && bks.length) setBookings(bks); });
+    fetchUsersFromApi().then(usr => { if (usr && usr.length) setAccounts(usr); });
 
     // Auto log WhatsApp & Email notifications (as demanded: "notification apr numero whatsaap et mail au client et à la régie")
     const clientWhatsAppLog: NotificationLog = {

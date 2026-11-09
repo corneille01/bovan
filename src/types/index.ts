@@ -106,6 +106,7 @@ export interface UserAccount {
   password?: string;
   createdAt: string;
   lastLoginAt: string;
+  liveGoal?: string;
   bookingIds: string[];
 }
 

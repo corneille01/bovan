@@ -125,6 +125,7 @@ export function autoRegisterUserAccount(booking: Booking): UserAccount {
   }
 
   localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+  updateUserProfileOnApi(account.email || account.phone, account).catch(console.warn);
   return account;
 }
 
