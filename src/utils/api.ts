@@ -47,7 +47,13 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     throw new ApiError('Connexion impossible. Vérifiez votre réseau et réessayez.', 0);
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data?.error || data?.message || 'Une erreur est survenue. Réessayez.', res.status, data?.code);
+  if (!res.ok) {
+    const raw = String(data?.error || data?.message || '');
+    // Un texte technique (base de données, réseau) n'est jamais montré au client.
+    const technical = !raw || res.status >= 500 && /password|authentication|postgres|neon|sql|relation|econn|timeout|stack|error:|exception/i.test(raw);
+    const fallback = res.status >= 500 ? 'Le service est momentanément indisponible. Réessayez dans quelques minutes.' : 'Une erreur est survenue. Réessayez.';
+    throw new ApiError(technical ? fallback : raw, res.status, data?.code);
+  }
   return data as T;
 }
 

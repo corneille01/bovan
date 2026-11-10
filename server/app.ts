@@ -105,7 +105,15 @@ async function startChallenge(store: Store, user: UserRec, channel: CodeChannel,
 }
 
 /* ───────── Configuration publique ───────── */
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', wrap(async (_req, res) => {
+  // Diagnostic sans secret : indique seulement si le stockage répond.
+  try {
+    await getStore();
+    res.json({ status: 'ok', storage: 'ok' });
+  } catch {
+    res.status(503).json({ status: 'degraded', storage: 'indisponible' });
+  }
+}));
 app.get('/api/config', (_req, res) => {
   res.json({
     demo: !isProduction() && (!emailProviderReady() || !phoneProviderReady()),
@@ -409,7 +417,7 @@ app.use('/api', (_req, res) => res.status(404).json({ error: 'Ressource introuva
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof HttpError) return res.status(err.status).json({ error: err.message, code: err.code });
   if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête illisible.' });
-  console.error('[Erreur]', err);
+  console.error('[Erreur]', err?.message || err);
   res.status(500).json({ error: 'Une erreur est survenue. Réessayez dans un instant.' });
 });
 
