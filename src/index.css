@@ -1,34 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  --f: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-family: var(--f);
+  --f: "Montserrat", system-ui, sans-serif;
+  --orange: #B84A14;
+  --orange-dark: #9E3E0F;
+  --orange-tint: #FDF3EC;
+  --ink: #111111;
   color-scheme: light;
 }
 
+html {
+  background: #FFFFFF;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
+  margin: 0;
+  background: #FFFFFF;
+  color: var(--ink);
+  font-family: var(--f);
+  font-variant-numeric: normal;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button, input, select, textarea {
   font-family: var(--f);
 }
 
-/* Force all right angles according to specs */
+::selection {
+  background: var(--orange);
+  color: #FFFFFF;
+}
+
+:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* Angles droits partout. */
 *, ::before, ::after {
   border-radius: 0 !important;
 }
 
-.font-mono-numbers {
-  font-family: 'IBM Plex Mono', monospace;
-  font-variant-numeric: tabular-nums;
+/* Les ancres ne passent pas sous la barre fixe. */
+html {
+  scroll-padding-top: 9rem;
 }
 
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  .no-print {
-    display: none !important;
-  }
-  .print-only {
-    display: block !important;
-  }
+  body { background: #FFFFFF !important; color: #000000 !important; }
+  .no-print { display: none !important; }
 }

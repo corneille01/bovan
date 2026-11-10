@@ -1,188 +1,103 @@
-import { Booking, UserAccount, NotificationLog } from '../types';
-import { 
-  directFetchBookings, 
-  directSaveBooking, 
-  directPatchBooking, 
-  directFetchUsers, 
-  directUpdateUserProfile, 
-  directPostNotification, 
-  directFetchNotifications, 
-  directSendAuthCode, 
-  directVerifyAuthCode 
-} from './neonDirect';
+import type { Booking, NotificationLog, UserAccount } from '../types';
 
-export interface ApiStatus {
-  status: string;
-  neonConnected: boolean;
-  database: string;
-  message: string;
+export type Channel = 'email' | 'sms' | 'whatsapp';
+
+export interface ServerConfig {
+  demo: boolean;
+  channels: { email: boolean; sms: boolean; whatsapp: boolean };
+  payment: { tmoney: boolean; flooz: boolean; mtn_momo: boolean };
 }
 
-export async function fetchApiStatus(): Promise<ApiStatus> {
+export interface Challenge {
+  challenge: string;
+  channel: Channel;
+  destination: string;
+  expiresInMinutes: number;
+  demoCode?: string;
+}
+
+export interface Busy {
+  date: string;
+  slotTime: string;
+  slotEndTime: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
+  let res: Response;
   try {
-    const res = await fetch('/api/status');
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host without backend');
+    res = await fetch(`/api${path}`, {
+      method,
+      credentials: 'same-origin',
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
   } catch {
-    return {
-      status: 'ok',
-      neonConnected: true,
-      database: 'Neon PostgreSQL (Direct Client Driver)',
-      message: 'Connecté directement à Neon DB via driver HTTP Serverless'
-    };
+    throw new ApiError('Connexion impossible. Vérifiez votre réseau et réessayez.', 0);
   }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(data?.error || data?.message || 'Une erreur est survenue. Réessayez.', res.status, data?.code);
+  return data as T;
 }
 
-export async function fetchBookingsFromApi(): Promise<Booking[]> {
-  try {
-    const res = await fetch('/api/bookings');
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host fallback');
-  } catch (e) {
-    console.warn('[API] Connecting directly to Neon DB for bookings...');
-    return await directFetchBookings();
-  }
+export interface RegisterInput {
+  fullName: string;
+  businessName: string;
+  email: string;
+  phone: string;
+  countryCode: string;
+  password: string;
+  channel: Channel;
+  sector?: string;
+  country?: string;
+  onScreenPhone?: string;
 }
 
-export async function saveBookingToApi(booking: Booking): Promise<boolean> {
-  try {
-    const res = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(booking)
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      const data = await res.json();
-      return Boolean(data.success);
-    }
-    throw new Error('Static host fallback');
-  } catch (e) {
-    console.warn('[API] Saving booking directly to Neon DB...');
-    return await directSaveBooking(booking);
-  }
+export interface BookingInput {
+  mode: string;
+  packId: string;
+  date: string;
+  slotTime: string;
+  activity: {
+    businessName: string;
+    sector: string;
+    productsDescription: string;
+    country: string;
+    onScreenPhone: string;
+    liveGoal: string;
+  };
+  paymentMethod: string;
+  consents: { cgv: boolean; data: boolean; image: boolean };
 }
 
-export async function patchBookingOnApi(id: string, status?: string, regieNotes?: string): Promise<boolean> {
-  try {
-    const res = await fetch(`/api/bookings/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, regieNotes })
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return res.ok;
-    }
-    throw new Error('Static host fallback');
-  } catch (e) {
-    console.warn('[API] Patching booking directly in Neon DB...');
-    return await directPatchBooking(id, status, regieNotes);
-  }
-}
-
-export async function fetchUsersFromApi(): Promise<UserAccount[]> {
-  try {
-    const res = await fetch('/api/users');
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host fallback');
-  } catch (e) {
-    console.warn('[API] Connecting directly to Neon DB for users...');
-    return await directFetchUsers();
-  }
-}
-
-export async function updateUserProfileOnApi(identifier: string, userData: Partial<UserAccount>): Promise<{ success: boolean; user?: UserAccount; message?: string }> {
-  try {
-    const res = await fetch(`/api/users/${encodeURIComponent(identifier)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host fallback');
-  } catch (e) {
-    console.warn('[API] Updating user profile directly in Neon DB...');
-    return await directUpdateUserProfile(identifier, userData);
-  }
-}
-
-export async function sendAuthCodeViaApi(identifier: string): Promise<{ success: boolean; message: string; simulatedCode?: string }> {
-  try {
-    const res = await fetch('/api/auth/send-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier })
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host fallback');
-  } catch (e: any) {
-    console.warn('[API] Sending auth code directly via Neon DB...');
-    return await directSendAuthCode(identifier);
-  }
-}
-
-export async function verifyAuthCodeViaApi(identifier: string, code: string): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
-  try {
-    const res = await fetch('/api/auth/verify-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier, code })
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host fallback');
-  } catch (e: any) {
-    console.warn('[API] Verifying auth code directly via Neon DB...');
-    return await directVerifyAuthCode(identifier, code);
-  }
-}
-
-export async function postNotificationLog(notif: NotificationLog): Promise<void> {
-  try {
-    const res = await fetch('/api/notifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(notif)
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return;
-    }
-    throw new Error('Static host fallback');
-  } catch {
-    console.warn('[API] Posting notification log directly to Neon DB...');
-    await directPostNotification(notif);
-  }
-}
-
-export async function fetchNotificationsFromApi(): Promise<NotificationLog[]> {
-  try {
-    const res = await fetch('/api/notifications');
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      return await res.json();
-    }
-    throw new Error('Static host fallback');
-  } catch (e) {
-    console.warn('[API] Fetching notifications directly from Neon DB...');
-    return await directFetchNotifications();
-  }
-}
+export const api = {
+  config: () => call<ServerConfig>('GET', '/config'),
+  register: (b: RegisterInput) => call<Challenge>('POST', '/auth/register', b),
+  login: (identifier: string, password: string, channel: Channel) => call<Challenge>('POST', '/auth/login', { identifier, password, channel }),
+  resend: (challenge: string, channel: Channel) => call<Challenge>('POST', '/auth/resend', { challenge, channel }),
+  verify: (challenge: string, code: string) => call<{ user?: UserAccount; resetToken?: string }>('POST', '/auth/verify', { challenge, code }),
+  recover: (identifier: string, channel: Channel) => call<Challenge>('POST', '/auth/recover', { identifier, channel }),
+  reset: (resetToken: string, newPassword: string) => call<{ ok: boolean }>('POST', '/auth/reset', { resetToken, newPassword }),
+  logout: () => call<{ ok: boolean }>('POST', '/auth/logout', {}),
+  me: () => call<{ user: UserAccount | null }>('GET', '/auth/me'),
+  updateMe: (patch: Partial<UserAccount>) => call<{ user: UserAccount }>('PUT', '/me', patch),
+  changePassword: (currentPassword: string, newPassword: string) => call<{ ok: boolean }>('POST', '/me/password', { currentPassword, newPassword }),
+  availability: () => call<{ busy: Busy[] }>('GET', '/availability'),
+  bookings: () => call<Booking[]>('GET', '/bookings'),
+  createBooking: (b: BookingInput) => call<{ booking: Booking }>('POST', '/bookings', b),
+  cancelBooking: (id: string) => call<{ booking: Booking }>('POST', `/bookings/${encodeURIComponent(id)}/cancel`, {}),
+  patchBooking: (id: string, patch: { status?: string; paymentStatus?: string; regieNotes?: string }) =>
+    call<{ booking: Booking }>('PATCH', `/bookings/${encodeURIComponent(id)}`, patch),
+  notifications: () => call<NotificationLog[]>('GET', '/notifications'),
+};

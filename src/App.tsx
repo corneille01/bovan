@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowUp } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, ArrowUp, Loader2 } from 'lucide-react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { StepProgressBar } from './components/StepProgressBar';
@@ -10,488 +10,422 @@ import { Step4Slot } from './components/Step4Slot';
 import { Step5Activity, ActivityFormData } from './components/Step5Activity';
 import { Step6Payment } from './components/Step6Payment';
 import { Step7Confirmation } from './components/Step7Confirmation';
-import { ClientAccountModal } from './components/ClientAccountModal';
+import { AuthPrefill, AuthView, ClientAccountModal } from './components/ClientAccountModal';
 import { RegieDashboard } from './components/RegieDashboard';
 import { LegalModal } from './components/LegalModal';
 import { CookieBanner } from './components/CookieBanner';
 import { NotificationsViewerModal } from './components/NotificationsViewerModal';
 import { PassageSheetModal } from './components/PassageSheetModal';
 import { ClientDashboard } from './components/ClientDashboard';
-
-import { 
-  Booking, 
-  BookingMode, 
-  PackId, 
-  PaymentMethod, 
-  UserAccount, 
-  NotificationLog 
-} from './types';
+import { Booking, BookingMode, NotificationLog, PackId, PaymentMethod, UserAccount } from './types';
 import { PACKS } from './data/packs';
-import { 
-  getBookings, 
-  saveBooking, 
-  updateBookingStatus, 
-  getUserAccounts, 
-  saveUserAccount, 
-  getCurrentUser, 
-  setCurrentUser, 
-  getNotifications, 
-  addNotification,
-  getCookieConsent,
-  setCookieConsent
-} from './utils/storage';
-import { fetchBookingsFromApi, fetchUsersFromApi, fetchNotificationsFromApi } from './utils/api';
-import { generateBookingReference, formatDateFr, formatFcfa } from './utils/formatters';
+import { getCookieConsent, setCookieConsent } from './utils/storage';
+import { api, ApiError, Busy, ServerConfig } from './utils/api';
+
+type Tab = 'booking' | 'regie' | 'account' | 'legal';
+type LegalTab = 'mentions' | 'cgv' | 'privacy' | 'cookies' | 'accessibility' | 'sitemap';
+
+const STEP_TITLES: Record<number, string> = {
+  2: 'Choisir la formule',
+  3: 'Choisir la date',
+  4: "Choisir l'heure",
+  5: 'Votre activité',
+  6: 'Vérifier et réserver',
+};
+
+const EMPTY_ACTIVITY: ActivityFormData = {
+  fullName: '',
+  phone: '',
+  countryCode: '+228',
+  email: '',
+  businessName: '',
+  sector: 'autre',
+  productsDescription: '',
+  country: 'Togo',
+  onScreenPhone: '',
+  liveGoal: '',
+};
+
+const errorText = (e: unknown) => (e instanceof ApiError ? e.message : 'Une erreur est survenue. Réessayez.');
 
 export default function App() {
-  // Navigation tabs
-  const [currentTab, setCurrentTab] = useState<'booking' | 'regie' | 'account' | 'legal'>('booking');
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentTab, setCurrentTab] = useState<Tab>('booking');
+  const [currentStep, setCurrentStep] = useState(1);
 
-  // Core Booking State
   const [selectedMode, setSelectedMode] = useState<BookingMode>('presentiel');
-  const [selectedPackId, setSelectedPackId] = useState<PackId>('visibilite');
-  const [selectedDate, setSelectedDate] = useState<string>('2026-12-08');
-  const [selectedSlotTime, setSelectedSlotTime] = useState<string>('10:30');
-  const [selectedSlotEndTime, setSelectedSlotEndTime] = useState<string>('12:00');
-  
-  // Activity form state
-  const [activityData, setActivityData] = useState<ActivityFormData>({
-    fullName: '',
-    phone: '',
-    countryCode: '+228',
-    email: '',
-    businessName: '',
-    sector: 'mode_textile',
-    productsDescription: '',
-    country: 'Togo',
-    onScreenPhone: '',
-    liveGoal: 'Placer mon produit et mes coordonnées WhatsApp devant des milliers de spectateurs.'
-  });
-
-  // Completed booking after payment
+  const [selectedPackId, setSelectedPackId] = useState<PackId>('express');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedSlotTime, setSelectedSlotTime] = useState('');
+  const [selectedSlotEndTime, setSelectedSlotEndTime] = useState('');
+  const [activityData, setActivityData] = useState<ActivityFormData>(EMPTY_ACTIVITY);
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
 
-  // Storage & Neon DB synced states
-  const [bookings, setBookings] = useState<Booking[]>(() => getBookings());
-  const [accounts, setAccounts] = useState<UserAccount[]>(() => getUserAccounts());
-  const [currentUser, setCurrentUserState] = useState<UserAccount | null>(() => getCurrentUser());
-  const [notifications, setNotifications] = useState<NotificationLog[]>(() => getNotifications());
+  const [config, setConfig] = useState<ServerConfig | null>(null);
+  const [busy, setBusy] = useState<Busy[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [notifications, setNotifications] = useState<NotificationLog[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [cookieConsent, setCookieConsentState] = useState<boolean | null>(() => getCookieConsent());
+  const [pageError, setPageError] = useState('');
 
-  // Initial Sync from Neon DB API
-  useEffect(() => {
-    async function syncDatabase() {
-      try {
-        const [apiBookings, apiUsers, apiNotifs] = await Promise.all([
-          fetchBookingsFromApi(),
-          fetchUsersFromApi(),
-          fetchNotificationsFromApi()
-        ]);
-        if (apiBookings && apiBookings.length > 0) {
-          setBookings(apiBookings);
-        }
-        if (apiUsers && apiUsers.length > 0) {
-          setAccounts(apiUsers);
-        }
-        if (apiNotifs && apiNotifs.length > 0) {
-          setNotifications(apiNotifs);
-        }
-      } catch (err) {
-        console.warn('Neon DB sync error on startup:', err);
-      }
+  const [auth, setAuth] = useState<{ view: AuthView; prefill?: AuthPrefill; then?: () => void } | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [passageBooking, setPassageBooking] = useState<Booking | null>(null);
+  const [legal, setLegal] = useState<{ tab: LegalTab } | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const isAdmin = currentUser?.role === 'regie_admin';
+
+  /* Chargement des données du serveur */
+  const refreshAvailability = useCallback(async () => {
+    try {
+      setBusy((await api.availability()).busy);
+    } catch {
+      /* les créneaux seront revérifiés par le serveur à la réservation */
     }
-    syncDatabase();
   }, []);
 
-  // Modal controls
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
-  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
-  const [showPassageSheetModal, setShowPassageSheetModal] = useState<boolean>(false);
-  const [activePassageBooking, setActivePassageBooking] = useState<Booking | null>(null);
-  const [showLegalModal, setShowLegalModal] = useState<boolean>(false);
-  const [legalTab, setLegalTab] = useState<'mentions' | 'cgv' | 'privacy' | 'cookies' | 'accessibility' | 'sitemap'>('mentions');
-
-  // Pre-fill activity data if user logs in
-  useEffect(() => {
-    if (currentUser) {
-      setActivityData(prev => ({
-        ...prev,
-        fullName: currentUser.fullName || prev.fullName,
-        phone: currentUser.phone || prev.phone,
-        countryCode: currentUser.countryCode || prev.countryCode,
-        email: currentUser.email || prev.email,
-        businessName: currentUser.businessName || prev.businessName,
-        sector: currentUser.sector || prev.sector,
-        onScreenPhone: currentUser.onScreenPhone || prev.onScreenPhone,
-        country: currentUser.country || prev.country
-      }));
+  const refreshPrivate = useCallback(async () => {
+    try {
+      const [b, n] = await Promise.all([api.bookings(), api.notifications()]);
+      setBookings(b);
+      setNotifications(n);
+    } catch (e) {
+      setPageError(errorText(e));
     }
+  }, []);
+
+  useEffect(() => {
+    api
+      .config()
+      .then(setConfig)
+      .catch(() => undefined);
+    refreshAvailability();
+    api
+      .me()
+      .then((r) => setCurrentUser(r.user))
+      .catch(() => undefined)
+      .finally(() => setSessionChecked(true));
+  }, [refreshAvailability]);
+
+  useEffect(() => {
+    if (currentUser) refreshPrivate();
+    else {
+      setBookings([]);
+      setNotifications([]);
+    }
+  }, [currentUser, refreshPrivate]);
+
+  useEffect(() => {
+    if (currentStep === 3 || currentStep === 4) refreshAvailability();
+  }, [currentStep, refreshAvailability]);
+
+  /* Préremplissage depuis le compte */
+  useEffect(() => {
+    if (!currentUser) return;
+    setActivityData((prev) => ({
+      ...prev,
+      fullName: currentUser.fullName,
+      phone: currentUser.phone,
+      countryCode: currentUser.countryCode,
+      email: currentUser.email,
+      businessName: prev.businessName || currentUser.businessName,
+      sector: prev.sector !== 'autre' ? prev.sector : currentUser.sector,
+      onScreenPhone: prev.onScreenPhone || currentUser.onScreenPhone,
+      country: prev.country || currentUser.country,
+    }));
   }, [currentUser]);
 
-  // Scroll to top on step or tab changes as requested
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0 });
   }, [currentStep, currentTab]);
 
-  // Floating return-to-top button state
-  const [showScrollTop, setShowScrollTop] = useState<boolean>(false);
-
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 200);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const currentPack = useMemo(() => PACKS.find((p) => p.id === selectedPackId) || PACKS[0], [selectedPackId]);
 
-  // Can navigate to step helper
+  const activityComplete = Boolean(
+    activityData.fullName && activityData.phone && activityData.email && activityData.businessName && activityData.onScreenPhone,
+  );
   const canNavigateTo = (step: number) => {
-    if (step === 1) return true;
-    if (step === 2) return true;
+    if (step <= 2) return true;
     if (step === 3) return Boolean(selectedPackId);
     if (step === 4) return Boolean(selectedDate);
-    if (step === 5) return Boolean(selectedSlotTime);
-    if (step === 6) return Boolean(activityData.fullName && activityData.phone);
+    if (step === 5) return Boolean(selectedDate && selectedSlotTime);
+    if (step === 6) return Boolean(selectedDate && selectedSlotTime && activityComplete && currentUser);
     if (step === 7) return Boolean(confirmedBooking);
     return false;
   };
 
-  // Step 5 Submit
+  /* Compte */
+  const openAuth = (view: AuthView = 'login', prefill?: AuthPrefill, then?: () => void) => setAuth({ view, prefill, then });
+
+  const handleAuthenticated = (user: UserAccount) => {
+    const then = auth?.then;
+    setCurrentUser(user);
+    setAuth(null);
+    if (then) then();
+    else setCurrentTab(user.role === 'regie_admin' ? 'regie' : 'account');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      /* le cookie expire de toute façon */
+    }
+    setCurrentUser(null);
+    setCurrentTab('booking');
+    setCurrentStep(1);
+    setConfirmedBooking(null);
+    setActivityData(EMPTY_ACTIVITY);
+  };
+
+  /* Étape 5 : le compte est créé (ou retrouvé) avant la réservation */
   const handleActivitySubmit = (data: ActivityFormData) => {
     setActivityData(data);
-    setCurrentStep(6);
+    if (currentUser) {
+      setCurrentStep(6);
+      return;
+    }
+    openAuth(
+      'register',
+      {
+        fullName: data.fullName,
+        businessName: data.businessName,
+        email: data.email,
+        phone: data.phone,
+        countryCode: data.countryCode,
+        sector: data.sector,
+        country: data.country,
+        onScreenPhone: data.onScreenPhone,
+      },
+      () => setCurrentStep(6),
+    );
   };
 
-  // Step 6 Payment Confirmation & Notifications Dispatch
-  const handleConfirmPayment = (paymentMethod: PaymentMethod, paymentRef: string) => {
-    const currentPack = PACKS.find(p => p.id === selectedPackId) || PACKS[0];
-    const newRef = generateBookingReference();
-
-    const newBooking: Booking = {
-      id: newRef,
-      reference: newRef,
-      createdAt: new Date().toISOString(),
-      mode: selectedMode,
-      packId: selectedPackId,
-      date: selectedDate,
-      slotTime: selectedSlotTime,
-      slotEndTime: selectedSlotEndTime,
-      fullName: activityData.fullName,
-      phone: activityData.phone,
-      countryCode: activityData.countryCode,
-      email: activityData.email,
-      businessName: activityData.businessName,
-      sector: activityData.sector,
-      productsDescription: activityData.productsDescription,
-      country: selectedMode === 'presentiel' ? 'Togo' : activityData.country,
-      onScreenPhone: activityData.onScreenPhone,
-      liveGoal: activityData.liveGoal,
-      paymentMethod,
-      paymentStatus: 'completed',
-      paymentReference: paymentRef,
-      totalFcfa: currentPack.priceFcfa,
-      totalEur: currentPack.priceEur,
-      status: 'confirmed',
-      regieNotes: `Réservation en ligne réglée via ${paymentMethod.toUpperCase()}.`,
-      assistantAssigned: selectedMode === 'presentiel' ? 'Ablavi (Studio Lomé)' : 'Folly (Ingénieur streaming)',
-      googleCalendarSynced: true,
-      whatsappNotificationSentClient: true,
-      emailNotificationSentClient: true,
-      whatsappNotificationSentRegie: true,
-      emailNotificationSentRegie: true
-    };
-
-    // Save in storage & Neon DB
-    saveBooking(newBooking);
-    setConfirmedBooking(newBooking);
-
-    // Refresh state from Neon DB directly
-    fetchBookingsFromApi().then(bks => { if (bks && bks.length) setBookings(bks); });
-    fetchUsersFromApi().then(usr => { if (usr && usr.length) setAccounts(usr); });
-
-    // Auto log WhatsApp & Email notifications (as demanded: "notification apr numero whatsaap et mail au client et à la régie")
-    const clientWhatsAppLog: NotificationLog = {
-      id: `NOTIF-WA-CLI-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      channel: 'whatsapp',
-      recipientType: 'client',
-      recipient: `${activityData.countryCode} ${activityData.phone}`,
-      subject: `Confirmation de votre créneau Live Streaming OCD (${newRef})`,
-      content: `Bonjour ${activityData.fullName},\nVotre créneau de diffusion en direct au Studio OCD Live Lomé est confirmé !\n📅 Date : ${formatDateFr(selectedDate)}\n⏰ Heure : ${selectedSlotTime} - ${selectedSlotEndTime} (GMT Lomé)\n📦 Formule : ${currentPack.name}\n📞 Numéro incrusté à l'écran : ${activityData.onScreenPhone}\nUn compte commerçant sécurisé a été généré pour vos prochaines diffusions.`,
-      bookingRef: newRef
-    };
-
-    const clientEmailLog: NotificationLog = {
-      id: `NOTIF-MAIL-CLI-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      channel: 'email',
-      recipientType: 'client',
-      recipient: activityData.email,
-      subject: `Accusé de réception officiel & Facture provisoire - Dossier ${newRef}`,
-      content: `Madame, Monsieur ${activityData.fullName},\nHouse of Challenge Lomé confirme l'enregistrement de votre créneau.\nMontant réglé : ${formatFcfa(currentPack.priceFcfa)}.\nConnectez-vous à votre Espace Commerçant via votre e-mail ou WhatsApp et votre code 2FA à 6 chiffres.`,
-      bookingRef: newRef
-    };
-
-    const regieWhatsAppLog: NotificationLog = {
-      id: `NOTIF-WA-REG-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      channel: 'whatsapp',
-      recipientType: 'regie',
-      recipient: '+228 90 00 11 22 (Régie BOVAN & Assistante Lomé)',
-      subject: `NOUVEAU LIVE PROGRAMMÉ : ${activityData.businessName} (${newRef})`,
-      content: `🔴 ALERTE RÉGIE STUDIO OCD LIVE LOMÉ :\nNouveau passage confirmé !\nCommerçant : ${activityData.fullName} (${activityData.businessName})\nDate : ${formatDateFr(selectedDate)} à ${selectedSlotTime} GMT\nMode : ${selectedMode === 'presentiel' ? 'PRÉSENTIEL (Studio Lomé)' : `À DISTANCE (${activityData.country})`}\nNuméro direct à afficher en live : ${activityData.onScreenPhone}\nPack : ${currentPack.name} (${formatFcfa(currentPack.priceFcfa)})\nRèglement : Validé (${paymentMethod.toUpperCase()})`,
-      bookingRef: newRef
-    };
-
-    const regieEmailLog: NotificationLog = {
-      id: `NOTIF-MAIL-REG-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      channel: 'email',
-      recipientType: 'regie',
-      recipient: 'blogoos1@gmail.com',
-      subject: `[RÉGIE BOVAN] Nouvelle réservation confirmée - Dossier ${newRef}`,
-      content: `Alerte Régie OCD Live Lomé :\nUne nouvelle réservation a été enregistrée.\nClient : ${activityData.fullName} (${activityData.email})\nCommerce : ${activityData.businessName}\nDate : ${formatDateFr(selectedDate)} à ${selectedSlotTime} GMT\nNuméro affiché en direct : ${activityData.onScreenPhone}\nMontant réglé : ${formatFcfa(currentPack.priceFcfa)} (${paymentMethod.toUpperCase()})`,
-      bookingRef: newRef
-    };
-
-    addNotification(clientWhatsAppLog);
-    addNotification(clientEmailLog);
-    addNotification(regieWhatsAppLog);
-    addNotification(regieEmailLog);
-    setNotifications(getNotifications());
-
-    // Advance to Step 7
-    setCurrentStep(7);
-  };
-
-  // Reset for a fresh booking
-  const handleNewBooking = () => {
-    setConfirmedBooking(null);
-    setCurrentStep(1);
-    setSelectedSlotTime('');
-  };
-
-  // Quick rebook from Client Account
-  const handleBookFromAccount = (user: UserAccount) => {
-    setActivityData({
-      fullName: user.fullName,
-      phone: user.phone,
-      countryCode: user.countryCode,
-      email: user.email,
-      businessName: user.businessName,
-      sector: user.sector,
-      productsDescription: '',
-      country: user.country,
-      onScreenPhone: user.onScreenPhone,
-      liveGoal: 'Nouvelle diffusion commerciale OCD Live'
-    });
-    setConfirmedBooking(null);
-    setCurrentTab('booking');
-    setCurrentStep(2); // Jump straight to pack selection
-  };
-
-  // Auth actions
-  const handleLogin = (user: UserAccount) => {
-    setCurrentUser(user);
-    setCurrentUserState(user);
-    saveUserAccount(user);
-    setAccounts(getUserAccounts());
-    if (user.role === 'regie_admin') {
-      setCurrentTab('regie');
-    } else {
-      setCurrentTab('account');
+  /* Étape 6 : le serveur contrôle tout (prix, créneau, consentements) */
+  const handleSubmitBooking = async (paymentMethod: PaymentMethod, consents: { cgv: boolean; data: boolean; image: boolean }): Promise<string | null> => {
+    try {
+      const { booking } = await api.createBooking({
+        mode: selectedMode,
+        packId: selectedPackId,
+        date: selectedDate,
+        slotTime: selectedSlotTime,
+        activity: {
+          businessName: activityData.businessName,
+          sector: activityData.sector,
+          productsDescription: activityData.productsDescription,
+          country: selectedMode === 'presentiel' ? 'Togo' : activityData.country,
+          onScreenPhone: activityData.onScreenPhone,
+          liveGoal: activityData.liveGoal,
+        },
+        paymentMethod,
+        consents,
+      });
+      setConfirmedBooking(booking);
+      setCurrentStep(7);
+      refreshPrivate();
+      refreshAvailability();
+      return null;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        setCurrentUser(null);
+        return 'Votre session a expiré. Reconnectez-vous puis réservez à nouveau.';
+      }
+      if (e instanceof ApiError && e.code === 'slot_taken') {
+        refreshAvailability();
+        setSelectedSlotTime('');
+        setSelectedSlotEndTime('');
+        setCurrentStep(4);
+      }
+      return errorText(e);
     }
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCurrentUserState(null);
-    setCurrentTab('booking');
+  const resetBooking = () => {
+    setConfirmedBooking(null);
+    setSelectedDate('');
+    setSelectedSlotTime('');
+    setSelectedSlotEndTime('');
     setCurrentStep(1);
   };
 
-  // Open passage sheet
-  const handleOpenPassage = (booking: Booking) => {
-    setActivePassageBooking(booking);
-    setShowPassageSheetModal(true);
+  const handleBookFromAccount = () => {
+    resetBooking();
+    setCurrentTab('booking');
+    setCurrentStep(2);
   };
 
-  // Status update from Regie
-  const handleUpdateStatus = (id: string, status: Booking['status'], notes?: string) => {
-    const updated = updateBookingStatus(id, status, notes);
-    setBookings(updated);
+  const handleCancel = async (id: string): Promise<string | null> => {
+    try {
+      await api.cancelBooking(id);
+      await refreshPrivate();
+      refreshAvailability();
+      return null;
+    } catch (e) {
+      return errorText(e);
+    }
   };
 
-  // Legal Modal opener
-  const handleOpenLegal = (tab: 'mentions' | 'cgv' | 'privacy' | 'cookies' | 'accessibility' | 'sitemap') => {
-    setLegalTab(tab);
-    setShowLegalModal(true);
+  const handleUpdateStatus = async (id: string, status: Booking['status'], notes?: string) => {
+    try {
+      await api.patchBooking(id, { status, regieNotes: notes, ...(status === 'confirmed' ? { paymentStatus: 'completed' } : {}) });
+      await refreshPrivate();
+      refreshAvailability();
+    } catch (e) {
+      setPageError(errorText(e));
+    }
   };
 
-  const currentPack = PACKS.find(p => p.id === selectedPackId) || PACKS[0];
+  const goStep = (step: number) => canNavigateTo(step) && setCurrentStep(step);
+  const openLegal = (tab: LegalTab) => setLegal({ tab });
+
+  const showBar = currentTab === 'booking';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-[#1E242B]">
-      {/* Top Header */}
-      <Header
-        currentTab={currentTab}
-        onNavigate={(tab) => {
-          if (tab === 'account' && !currentUser) {
-            setShowAuthModal(true);
-          } else {
-            setCurrentTab(tab);
-          }
-        }}
-        currentUser={currentUser}
-        onOpenAuth={() => setShowAuthModal(true)}
-        onLogout={handleLogout}
-        onOpenNotifications={() => setShowNotificationsModal(true)}
-        notificationCount={notifications.length}
-      />
+    <div className="min-h-screen flex flex-col bg-white text-neutral-900">
+      {/* En-tête, étapes et bouton Précédent restent visibles en permanence */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm">
+        <Header
+          currentTab={currentTab}
+          onNavigate={(tab) => (tab === 'account' && !currentUser ? openAuth('login') : setCurrentTab(tab))}
+          currentUser={currentUser}
+          onOpenAuth={() => openAuth('login')}
+          onLogout={handleLogout}
+          onOpenNotifications={() => setShowNotifications(true)}
+          notificationCount={notifications.length}
+        />
+        {showBar && <StepProgressBar currentStep={currentStep} onGoToStep={goStep} canNavigateTo={canNavigateTo} />}
+        {showBar && currentStep > 1 && currentStep < 7 && (
+          <div className="bg-white border-b border-neutral-300">
+            <div className="mx-auto max-w-6xl px-3 sm:px-4 py-1.5 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
+                className="inline-flex items-center gap-1.5 border border-neutral-400 px-3 text-sm font-semibold text-neutral-900 hover:bg-neutral-100 min-h-[44px]"
+              >
+                <ArrowLeft className="w-4 h-4 text-[#B84A14]" />
+                <span>Étape précédente</span>
+              </button>
+              <p className="text-sm text-neutral-700 text-right">
+                <span className="font-bold text-[#B84A14] tabular-nums">Étape {currentStep} sur 7</span>
+                <span className="hidden sm:inline">, {STEP_TITLES[currentStep]}</span>
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
-      {/* Main Container */}
       <main className="flex-1">
+        {pageError && (
+          <div role="alert" className="mx-auto max-w-6xl px-4 pt-4">
+            <div className="flex items-start justify-between gap-3 border border-red-300 bg-red-50 text-red-800 text-sm p-3">
+              <span>{pageError}</span>
+              <button type="button" onClick={() => setPageError('')} className="underline shrink-0">
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
+
         {currentTab === 'booking' && (
-          <div>
-            {/* Sticky Step Progress & Navigation Container for Mobile & Desktop */}
-            <div className="sticky top-[48px] sm:top-[56px] z-30 shadow-md w-full bg-white">
-              <StepProgressBar
-                currentStep={currentStep}
-                onGoToStep={(step) => {
-                  if (canNavigateTo(step)) {
-                    setCurrentStep(step);
-                  }
-                }}
-                canNavigateTo={canNavigateTo}
+          <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+            {currentStep === 1 && <Step1Mode selectedMode={selectedMode} onSelectMode={setSelectedMode} onNext={() => setCurrentStep(2)} />}
+            {currentStep === 2 && (
+              <Step2Pack
+                mode={selectedMode}
+                selectedPackId={selectedPackId}
+                onSelectPack={setSelectedPackId}
+                onNext={() => setCurrentStep(3)}
+                onPrev={() => setCurrentStep(1)}
               />
-
-              {currentStep > 1 && currentStep < 7 && (
-                <div className="bg-white border-b-2 border-neutral-300">
-                  <div className="mx-auto max-w-6xl px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
-                      className="inline-flex items-center gap-1.5 border border-neutral-400 bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-neutral-800 transition-colors cursor-pointer shrink-0"
-                      title="Revenir à l'étape précédente pour modifier votre choix"
-                    >
-                      <ArrowLeft className="w-4 h-4 text-[#B84A14]" />
-                      <span>Étape précédente ({currentStep - 1})</span>
-                    </button>
-
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-neutral-600">
-                      <span className="font-mono font-bold text-[#B84A14]">Étape {currentStep} sur 7</span>
-                      <span className="hidden sm:inline text-neutral-400">-</span>
-                      <span className="font-semibold text-neutral-700">
-                        {currentStep === 2 && 'Sélection de la Formule'}
-                        {currentStep === 3 && 'Sélection de la Date'}
-                        {currentStep === 4 && 'Sélection du Créneau'}
-                        {currentStep === 5 && 'Votre Activité & Coordonnées'}
-                        {currentStep === 6 && 'Paiement Sécurisé'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mx-auto max-w-6xl px-4 py-8">
-              {currentStep === 1 && (
-                <Step1Mode
-                  selectedMode={selectedMode}
-                  onSelectMode={(mode) => setSelectedMode(mode)}
-                  onNext={() => setCurrentStep(2)}
-                />
-              )}
-
-              {currentStep === 2 && (
-                <Step2Pack
-                  mode={selectedMode}
-                  selectedPackId={selectedPackId}
-                  onSelectPack={(id) => setSelectedPackId(id)}
-                  onNext={() => setCurrentStep(3)}
-                  onPrev={() => setCurrentStep(1)}
-                />
-              )}
-
-              {currentStep === 3 && (
-                <Step3Date
-                  selectedDate={selectedDate}
-                  onSelectDate={(d) => setSelectedDate(d)}
-                  onNext={() => setCurrentStep(4)}
-                  onPrev={() => setCurrentStep(2)}
-                  existingBookings={bookings}
-                />
-              )}
-
-              {currentStep === 4 && (
-                <Step4Slot
-                  packId={selectedPackId}
-                  date={selectedDate}
-                  selectedSlotTime={selectedSlotTime}
-                  onSelectSlot={(time, endTime) => {
-                    setSelectedSlotTime(time);
-                    setSelectedSlotEndTime(endTime);
-                  }}
-                  onNext={() => setCurrentStep(5)}
-                  onPrev={() => setCurrentStep(3)}
-                  existingBookings={bookings}
-                />
-              )}
-
-              {currentStep === 5 && (
-                <Step5Activity
-                  mode={selectedMode}
-                  initialData={activityData}
-                  onSubmitData={handleActivitySubmit}
-                  onPrev={() => setCurrentStep(4)}
-                  currentUser={currentUser}
-                />
-              )}
-
-              {currentStep === 6 && (
-                <Step6Payment
-                  pack={currentPack}
-                  mode={selectedMode}
-                  date={selectedDate}
-                  slotTime={selectedSlotTime}
-                  slotEndTime={selectedSlotEndTime}
-                  activityData={activityData}
-                  onConfirmPayment={handleConfirmPayment}
-                  onPrev={() => setCurrentStep(5)}
-                />
-              )}
-
-              {currentStep === 7 && confirmedBooking && (
-                <Step7Confirmation
-                  booking={confirmedBooking}
-                  onOpenPassageSheet={handleOpenPassage}
-                  onGoToAccount={(user) => {
-                    handleLogin(user);
-                    setCurrentTab('account');
-                  }}
-                  onGoToRegie={() => setCurrentTab('regie')}
-                  onNewBooking={handleNewBooking}
-                  currentUser={currentUser}
-                />
-              )}
-            </div>
+            )}
+            {currentStep === 3 && (
+              <Step3Date
+                selectedDate={selectedDate}
+                onSelectDate={(d) => {
+                  setSelectedDate(d);
+                  setSelectedSlotTime('');
+                  setSelectedSlotEndTime('');
+                }}
+                onNext={() => setCurrentStep(4)}
+                onPrev={() => setCurrentStep(2)}
+                busy={busy}
+              />
+            )}
+            {currentStep === 4 && (
+              <Step4Slot
+                packId={selectedPackId}
+                date={selectedDate}
+                selectedSlotTime={selectedSlotTime}
+                onSelectSlot={(t, e) => {
+                  setSelectedSlotTime(t);
+                  setSelectedSlotEndTime(e);
+                }}
+                onNext={() => setCurrentStep(5)}
+                onPrev={() => setCurrentStep(3)}
+                busy={busy}
+              />
+            )}
+            {currentStep === 5 && (
+              <Step5Activity
+                mode={selectedMode}
+                initialData={activityData}
+                onSubmitData={handleActivitySubmit}
+                onPrev={() => setCurrentStep(4)}
+                currentUser={currentUser}
+              />
+            )}
+            {currentStep === 6 && currentUser && (
+              <Step6Payment
+                pack={currentPack}
+                mode={selectedMode}
+                date={selectedDate}
+                slotTime={selectedSlotTime}
+                slotEndTime={selectedSlotEndTime}
+                activityData={activityData}
+                onSubmit={handleSubmitBooking}
+                onPrev={() => setCurrentStep(5)}
+                onOpenLegal={openLegal}
+              />
+            )}
+            {currentStep === 7 && confirmedBooking && (
+              <Step7Confirmation
+                booking={confirmedBooking}
+                onOpenPassageSheet={setPassageBooking}
+                onGoToAccount={() => setCurrentTab('account')}
+                onNewBooking={resetBooking}
+              />
+            )}
           </div>
         )}
 
         {currentTab === 'regie' && (
           <div className="mx-auto max-w-6xl px-4 py-8">
-            <RegieDashboard
-              bookings={bookings}
-              onUpdateStatus={handleUpdateStatus}
-              onOpenPassageSheet={handleOpenPassage}
-              onOpenNotifications={() => setShowNotificationsModal(true)}
-              onLogout={handleLogout}
-            />
+            {isAdmin ? (
+              <RegieDashboard
+                bookings={bookings}
+                onUpdateStatus={handleUpdateStatus}
+                onOpenPassageSheet={setPassageBooking}
+                onOpenNotifications={() => setShowNotifications(true)}
+                onLogout={handleLogout}
+              />
+            ) : !sessionChecked ? (
+              <Loader2 className="w-6 h-6 animate-spin text-[#B84A14] mx-auto" aria-label="Chargement" />
+            ) : (
+              <div className="border border-neutral-300 p-6 text-center space-y-3">
+                <p className="font-bold">Cet espace est réservé au studio.</p>
+                <button type="button" className="bg-[#B84A14] text-white px-5 py-3 font-bold min-h-[48px]" onClick={() => openAuth('login')}>
+                  Se connecter
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -500,60 +434,31 @@ export default function App() {
             <ClientDashboard
               currentUser={currentUser}
               allBookings={bookings}
-              onLogin={(user) => handleLogin(user)}
+              onLogin={setCurrentUser}
               onLogout={handleLogout}
               onBookNewSlot={handleBookFromAccount}
-              onOpenPassageSheet={handleOpenPassage}
+              onOpenPassageSheet={setPassageBooking}
+              onCancelBooking={handleCancel}
             />
           </div>
         )}
       </main>
 
-      {/* Footer */}
-      <Footer onOpenLegal={handleOpenLegal} />
+      <Footer onOpenLegal={openLegal} />
 
-      {/* Auth / Client Account Modal */}
-      {showAuthModal && (
+      {auth && (
         <ClientAccountModal
-          currentUser={currentUser}
-          onLogin={(user) => {
-            handleLogin(user);
-          }}
-          onLogout={handleLogout}
-          allAccounts={accounts}
-          allBookings={bookings}
-          onBookNewSlot={handleBookFromAccount}
-          onOpenPassageSheet={handleOpenPassage}
-          onClose={() => setShowAuthModal(false)}
+          initialView={auth.view}
+          prefill={auth.prefill}
+          config={config}
+          onAuthenticated={handleAuthenticated}
+          onClose={() => setAuth(null)}
         />
       )}
+      {showNotifications && <NotificationsViewerModal notifications={notifications} currentUser={currentUser} onClose={() => setShowNotifications(false)} />}
+      {passageBooking && <PassageSheetModal booking={passageBooking} onClose={() => setPassageBooking(null)} />}
+      {legal && <LegalModal initialTab={legal.tab} onClose={() => setLegal(null)} />}
 
-      {/* Notifications Audit Viewer Modal */}
-      {showNotificationsModal && (
-        <NotificationsViewerModal
-          notifications={notifications}
-          currentUser={currentUser}
-          onClose={() => setShowNotificationsModal(false)}
-        />
-      )}
-
-      {/* Passage Sheet Modal */}
-      {showPassageSheetModal && (
-        <PassageSheetModal
-          booking={activePassageBooking}
-          onClose={() => setShowPassageSheetModal(false)}
-        />
-      )}
-
-      {/* Legal & Compliance Modal */}
-      {showLegalModal && (
-        <LegalModal
-          initialTab={legalTab}
-          onClose={() => setShowLegalModal(false)}
-        />
-      )}
-
-      {/* CNIL Compliant Cookie Banner */}
       {cookieConsent === null && (
         <CookieBanner
           onAccept={() => {
@@ -564,20 +469,18 @@ export default function App() {
             setCookieConsent(false);
             setCookieConsentState(false);
           }}
-          onCustomize={() => handleOpenLegal('cookies')}
+          onCustomize={() => openLegal('cookies')}
         />
       )}
 
-      {/* Floating Return to Top Button */}
       {showScrollTop && (
         <button
           type="button"
-          onClick={scrollToTop}
-          className="fixed bottom-10 right-4 sm:right-8 z-50 border-2 border-neutral-900 bg-[#B84A14] hover:bg-[#9E3E0F] active:bg-black text-white p-3 shadow-2xl flex items-center justify-center cursor-pointer transition-all"
-          title="Remonter en haut de la page"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-4 right-4 z-30 bg-[#B84A14] hover:bg-[#9E3E0F] text-white p-3 min-w-[48px] min-h-[48px] flex items-center justify-center"
           aria-label="Remonter en haut de la page"
         >
-          <ArrowUp className="w-5 h-5 text-white" />
+          <ArrowUp className="w-5 h-5" />
         </button>
       )}
     </div>

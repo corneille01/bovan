@@ -3,112 +3,111 @@ import { Pack } from '../types';
 export const PACKS: Pack[] = [
   {
     id: 'express',
-    name: '1. Pack Express',
+    name: 'Express',
     durationLabel: '1 h 30',
     durationMinutes: 90,
     priceFcfa: 15000,
     priceEur: 23,
-    headline: '1 live en studio ou à distance',
-    description: 'Le format idéal pour tester le live streaming OCD, présenter vos produits phares et afficher votre numéro.',
+    headline: 'Un live de 1 h 30',
+    description: 'Un live pour présenter vos produits et afficher votre numéro WhatsApp. Vous le faites au studio ou à distance.',
     sessionsCount: 1,
     features: [
-      '1 live dédié de 1 h 30 en direct sur TikTok & Facebook',
-      'Accompagnement complet de la régie House of Challenge',
-      'Affichage permanent de votre numéro WhatsApp et adresse à l\'écran',
-      'En présentiel au studio de Lomé OU à distance avec assistante dédiée',
-      'Conseils préparatoires pour placer vos produits et argumentaires'
+      'Un live de 1 h 30 en direct sur TikTok et Facebook.',
+      'L\'équipe du studio vous accompagne pendant tout le live.',
+      'Votre numéro WhatsApp reste affiché à l\'écran.',
+      'Vous venez au studio de Lomé, ou vous restez chez vous avec une animatrice du studio.',
+      'Nous vous donnons des conseils pour préparer vos produits et votre présentation.'
     ]
   },
   {
     id: 'duo',
-    name: '2. Pack Duo',
-    durationLabel: '3 h (2 lives de 1 h 30)',
+    name: 'Duo',
+    durationLabel: '2 lives de 1 h 30',
     durationMinutes: 90,
     priceFcfa: 27000,
     priceEur: 41,
-    headline: '2 lives de 1 h 30 - Économisez 3 000 FCFA',
-    description: 'Deux créneaux pour relancer votre audience et approfondir la présentation de votre catalogue.',
+    headline: 'Deux lives de 1 h 30, 3 000 FCFA d\'économie',
+    description: 'Deux lives pour revenir devant vos spectateurs et présenter plus de produits.',
     sessionsCount: 2,
     features: [
-      '2 sessions distinctes de 1 h 30 (date du 1er créneau choisie ici)',
-      'Deuxième créneau fixé directement avec la régie selon vos disponibilités',
-      'Bandeau contact incrusté personnalisé',
-      'Régie complète et modération des commentaires en direct',
-      'Statistiques d\'audience après chaque session'
+      'Deux lives de 1 h 30 chacun.',
+      'Vous choisissez la date du premier live ici.',
+      'Vous fixez le deuxième avec l\'équipe du studio, selon vos disponibilités.',
+      'Votre numéro WhatsApp reste affiché à l\'écran.',
+      'L\'équipe du studio suit les commentaires pendant le live.'
     ]
   },
   {
     id: 'marathon',
-    name: '3. Pack Marathon',
-    durationLabel: '4 h (bloc continu)',
+    name: 'Marathon',
+    durationLabel: '4 h en continu',
     durationMinutes: 240,
     priceFcfa: 30000,
     priceEur: 46,
-    headline: '1 bloc continu de 4 h - 7 500 FCFA / h',
-    description: 'Grande session intensive de déstockage, promotions flash ou démonstration artisanale en grand format.',
+    headline: 'Un live de 4 h à 7 500 FCFA l\'heure',
+    description: 'Un long live pour vendre votre stock, faire des promotions ou montrer votre savoir-faire.',
     sessionsCount: 1,
     isContinuousBlock: true,
     features: [
-      'Créneau XXL de 4 heures en continu (09h-13h ou 14h-18h)',
-      'Tarif préférentiel : 7 500 FCFA / heure au lieu de 10 000 FCFA',
-      'Animation continue avec transitions et mise en avant des stocks',
-      'Incrustation de vos catalogues et fiches produits',
-      'Assistance technique renforcée tout au long du marathon'
+      'Un seul live de 4 heures, le matin de 9 h à 13 h ou l\'après-midi de 14 h à 18 h.',
+      'Le tarif est de 7 500 FCFA l\'heure, au lieu de 10 000 FCFA.',
+      'L\'équipe du studio vous aide à enchaîner vos produits pendant tout le live.',
+      'Votre numéro WhatsApp reste affiché à l\'écran.',
+      'Un technicien reste à vos côtés pendant les 4 heures.'
     ]
   },
   {
     id: 'visibilite',
-    name: '4. Pack Visibilité',
-    durationLabel: '1 h 30 + Annonce Vidéo',
+    name: 'Visibilité',
+    durationLabel: '1 h 30 avec annonce vidéo',
     durationMinutes: 90,
     priceFcfa: 35000,
     priceEur: 53,
-    headline: '1 live + annonce officielle par BOVAN',
-    description: 'BOVAN annonce personnellement votre live sur les comptes TikTok & Facebook de House of Challenge avec votre vidéo.',
+    headline: 'Un live et une annonce par BOVAN',
+    description: 'BOVAN annonce votre live en vidéo sur les comptes TikTok et Facebook de House of Challenge.',
     recommended: true,
     sessionsCount: 1,
     features: [
-      '1 live dédié de 1 h 30 dirigé par la régie OCD Live',
-      'Vidéo d\'annonce publiée par BOVAN avant le live sur TikTok & Facebook',
-      'Boost massif de la notoriété et afflux garanti dès le début du live',
-      'Accompagnement éditorial personnalisé pour votre vidéo teaser',
-      'Bannière sponsorisée sur le stream et épinglage du contact'
+      'Un live de 1 h 30 mené avec l\'équipe du studio.',
+      'BOVAN publie une vidéo d\'annonce avant le live, sur TikTok et Facebook.',
+      'Nous vous aidons à préparer cette vidéo.',
+      'Votre numéro WhatsApp reste affiché à l\'écran pendant le live.'
     ]
   },
   {
     id: 'mensuel',
-    name: '5. Pack Mensuel',
-    durationLabel: '6 h (4 lives)',
+    name: 'Mensuel',
+    durationLabel: '4 lives de 1 h 30',
     durationMinutes: 90,
     priceFcfa: 55000,
     priceEur: 84,
-    headline: '4 lives (1 / semaine) + 1 annonce officielle',
-    description: 'Une présence continue chaque semaine pour fidéliser votre clientèle et multiplier vos contacts d\'affaires.',
+    headline: 'Quatre lives, un par semaine, et une annonce',
+    description: 'Un live chaque semaine pendant un mois, pour rester présent devant vos clients.',
     sessionsCount: 4,
     features: [
-      '4 lives de 1 h 30 répartis sur le mois (1 live chaque semaine)',
-      '1 annonce vidéo officielle publiée sur les réseaux BOVAN',
-      'Planification prioritaire des créneaux hebdomadaires',
-      'Fiche client dédiée dans le CRM et suivi régulier des ventes',
-      'Tarif dégressif avantageux pour les commerçants réguliers'
+      'Quatre lives de 1 h 30, un par semaine pendant le mois.',
+      'Vous choisissez la date du premier live ici.',
+      'Vous fixez les trois suivants avec l\'équipe du studio.',
+      'BOVAN publie une annonce vidéo sur ses réseaux.',
+      'Votre numéro WhatsApp reste affiché à l\'écran.'
     ]
   },
   {
     id: 'premium',
-    name: '6. Pack Premium Mois',
-    durationLabel: '10 h (4 lives + Marathon + 4 annonces)',
+    name: 'Premium',
+    durationLabel: '10 h en tout',
     durationMinutes: 90,
     priceFcfa: 120000,
     priceEur: 183,
-    headline: 'La formule ultime d\'accélération commerciale',
-    description: '4 lives + 4 annonces vidéo + vidéo de présentation dédiée par BOVAN + 1 bloc Marathon de 4 h complet.',
+    headline: 'Quatre lives, un marathon et quatre annonces',
+    description: 'Quatre lives de 1 h 30, un live de 4 h et quatre annonces vidéo, avec une vidéo de présentation réalisée par BOVAN.',
     sessionsCount: 5,
     features: [
-      '4 lives de 1 h 30 + 1 bloc continu Marathon de 4 heures (10 h au total)',
-      '4 annonces de diffusion programmées sur les comptes officiels',
-      '1 vidéo de présentation dédiée enregistrée et publiée par BOVAN',
-      'Mise en avant VIP sur les canaux House of Challenge & réseaux partenaires',
-      'Suivi stratégique et rapport complet de conversion et prises de contact'
+      'Quatre lives de 1 h 30 et un live continu de 4 heures, soit 10 heures en tout.',
+      'Vous choisissez la date du premier live ici.',
+      'Vous fixez les suivants avec l\'équipe du studio.',
+      'BOVAN publie quatre annonces sur les comptes de House of Challenge.',
+      'BOVAN enregistre et publie une vidéo de présentation de votre activité.'
     ]
   }
 ];
@@ -122,6 +121,6 @@ export const TIME_SLOTS_1H30 = [
 ];
 
 export const TIME_SLOTS_4H = [
-  { time: '09:00', endTime: '13:00', label: '09h00 – 13h00 GMT (Matinée Marathon)' },
-  { time: '14:00', endTime: '18:00', label: '14h00 – 18h00 GMT (Après-midi Marathon)' }
+  { time: '09:00', endTime: '13:00', label: '09h00 – 13h00 GMT' },
+  { time: '14:00', endTime: '18:00', label: '14h00 – 18h00 GMT' }
 ];

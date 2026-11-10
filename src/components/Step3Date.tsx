@@ -1,33 +1,24 @@
 import React, { useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, ArrowRight, ArrowLeft, Calendar as CalendarIcon, Info } from 'lucide-react';
 import { formatDateFr } from '../utils/formatters';
-import { Booking } from '../types';
+import type { Busy } from '../utils/api';
 
 interface Step3DateProps {
   selectedDate: string;
   onSelectDate: (date: string) => void;
   onNext: () => void;
   onPrev: () => void;
-  existingBookings: Booking[];
+  busy: Busy[];
 }
 
-export const Step3Date: React.FC<Step3DateProps> = ({
-  selectedDate,
-  onSelectDate,
-  onNext,
-  onPrev,
-  existingBookings
-}) => {
+export const Step3Date: React.FC<Step3DateProps> = ({ selectedDate, onSelectDate, onNext, onPrev, busy }) => {
   const ctaButtonRef = useRef<HTMLButtonElement>(null);
 
   const today = new Date();
   const [currentYear, setCurrentYear] = useState<number>(() => today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(() => today.getMonth()); // 0-indexed
 
-  const monthNames = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
+  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
   const handlePrevMonth = () => {
     if (currentMonth === 0) {
@@ -75,8 +66,8 @@ export const Step3Date: React.FC<Step3DateProps> = ({
       return { status: 'past', label: 'Passé', dateStr };
     }
 
-    const dayBookings = existingBookings.filter(b => b.date === dateStr && b.status !== 'cancelled');
-    if (dayBookings.length >= 6) {
+    const dayBookings = busy.filter((b) => b.date === dateStr);
+    if (dayBookings.length >= 5) {
       return { status: 'full', label: 'Complet', dateStr };
     }
 
@@ -95,12 +86,8 @@ export const Step3Date: React.FC<Step3DateProps> = ({
       <div className="bg-white border border-neutral-300 p-4 sm:p-6 shadow-xs">
         {/* Header */}
         <div className="border-b border-neutral-200 pb-4 mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 tracking-tight">
-            Calendrier Officiel des Diffusions en Direct - Studio OCD Live Lomé
-          </h2>
-          <p className="text-xs text-neutral-600 mt-1">
-            Programmation sans chevauchement. Studio ouvert 7 jours sur 7 (dimanches inclus).
-          </p>
+          <h2 className="text-lg sm:text-xl font-bold text-neutral-900 ">Choisissez la date de votre live</h2>
+          <p className="text-xs text-neutral-600 mt-1">Le studio est ouvert tous les jours, dimanche compris. Un seul live à la fois.</p>
         </div>
 
         {/* Calendar Nav */}
@@ -109,7 +96,7 @@ export const Step3Date: React.FC<Step3DateProps> = ({
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="flex items-center gap-1 border border-neutral-300 bg-white px-2.5 py-1 text-xs font-bold uppercase text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+              className="flex items-center gap-1 border border-neutral-300 bg-white px-2.5 py-1 text-xs font-bold text-neutral-700 hover:bg-neutral-100 cursor-pointer"
               aria-label="Mois précédent"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -117,7 +104,7 @@ export const Step3Date: React.FC<Step3DateProps> = ({
             </button>
 
             <div className="text-center">
-              <h3 className="text-sm sm:text-base font-extrabold uppercase tracking-wide text-neutral-900">
+              <h3 className="text-sm sm:text-base font-bold text-neutral-900">
                 {monthNames[currentMonth]} {currentYear}
               </h3>
             </div>
@@ -125,7 +112,7 @@ export const Step3Date: React.FC<Step3DateProps> = ({
             <button
               type="button"
               onClick={handleNextMonth}
-              className="flex items-center gap-1 border border-neutral-300 bg-white px-2.5 py-1 text-xs font-bold uppercase text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+              className="flex items-center gap-1 border border-neutral-300 bg-white px-2.5 py-1 text-xs font-bold text-neutral-700 hover:bg-neutral-100 cursor-pointer"
               aria-label="Mois suivant"
             >
               <span className="hidden sm:inline">Suivant</span>
@@ -134,23 +121,23 @@ export const Step3Date: React.FC<Step3DateProps> = ({
           </div>
 
           {/* Color-coded Legend */}
-          <div className="flex items-center justify-center gap-4 text-xs font-bold py-2 px-3 bg-neutral-50 border border-neutral-200 mb-3">
+          <div className="flex items-center justify-center gap-4 text-xs font-bold py-2 px-3 bg-white border border-neutral-200 mb-3">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block shrink-0"></span>
-              <span className="text-emerald-800">Vert : Disponible</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-neutral-900 inline-block shrink-0"></span>
+              <span className="text-neutral-900">Libre</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block shrink-0"></span>
-              <span className="text-red-700">Rouge : Complet</span>
+              <span className="text-red-700">Complet</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-neutral-400 inline-block shrink-0"></span>
-              <span className="text-neutral-500">Gris : Passé</span>
+              <span className="text-neutral-500">Passé</span>
             </div>
           </div>
 
           {/* Days Header */}
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-neutral-700 border-b border-neutral-300 pb-2 mb-2 uppercase">
+          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-neutral-700 border-b border-neutral-300 pb-2 mb-2 ">
             <span>Lun</span>
             <span>Mar</span>
             <span>Mer</span>
@@ -177,10 +164,10 @@ export const Step3Date: React.FC<Step3DateProps> = ({
                     className="p-1.5 sm:p-2.5 border border-neutral-200 bg-neutral-100 text-neutral-400 text-center min-h-[48px] flex flex-col justify-between items-center opacity-40 cursor-not-allowed"
                     title="Date passée non réservable"
                   >
-                    <span className="text-xs font-bold font-mono">{day}</span>
+                    <span className="text-xs font-bold tabular-nums">{day}</span>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="w-2 h-2 rounded-full bg-neutral-400 inline-block sm:hidden"></span>
-                      <span className="hidden sm:inline text-[9px] uppercase font-bold text-neutral-400">Passé</span>
+                      <span className="hidden sm:inline text-[9px] font-bold text-neutral-400">Passé</span>
                     </div>
                   </div>
                 );
@@ -191,12 +178,12 @@ export const Step3Date: React.FC<Step3DateProps> = ({
                   <div
                     key={info.dateStr}
                     className="p-1.5 sm:p-2.5 border border-red-300 bg-red-50 text-red-800 text-center min-h-[48px] flex flex-col justify-between items-center cursor-not-allowed"
-                    title="Journée complète (6 créneaux réservés)"
+                    title="Journée complète"
                   >
-                    <span className="text-xs font-bold font-mono">{day}</span>
+                    <span className="text-xs font-bold tabular-nums">{day}</span>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block"></span>
-                      <span className="hidden sm:inline text-[9px] uppercase font-bold text-red-700">Complet</span>
+                      <span className="hidden sm:inline text-[9px] font-bold text-red-700">Complet</span>
                     </div>
                   </div>
                 );
@@ -210,19 +197,13 @@ export const Step3Date: React.FC<Step3DateProps> = ({
                   className={`p-1.5 sm:p-2.5 border text-center transition-all min-h-[48px] flex flex-col justify-between items-center cursor-pointer ${
                     isSelected
                       ? 'border-[#B84A14] bg-[#B84A14] text-white font-bold ring-2 ring-[#B84A14]'
-                      : 'border-emerald-400 bg-emerald-50/50 hover:bg-emerald-100/80 text-neutral-900'
+                      : 'border-neutral-400 bg-white hover:bg-[#FDF3EC] text-neutral-900'
                   }`}
                 >
-                  <span className="text-xs font-mono font-extrabold">{day}</span>
+                  <span className="text-xs tabular-nums font-bold">{day}</span>
                   <div className="flex items-center gap-1 mt-1">
-                    <span className={`w-2.5 h-2.5 rounded-full inline-block ${isSelected ? 'bg-white' : 'bg-emerald-600'}`}></span>
-                    <span
-                      className={`hidden sm:inline text-[9px] uppercase font-bold ${
-                        isSelected ? 'text-white' : 'text-emerald-800'
-                      }`}
-                    >
-                      Dispo
-                    </span>
+                    <span className={`w-2.5 h-2.5 rounded-full inline-block ${isSelected ? 'bg-white' : 'bg-neutral-900'}`}></span>
+                    <span className={`hidden sm:inline text-[9px] font-bold ${isSelected ? 'text-white' : 'text-neutral-900'}`}>Dispo</span>
                   </div>
                 </button>
               );
@@ -234,21 +215,17 @@ export const Step3Date: React.FC<Step3DateProps> = ({
         {selectedDate && (
           <div className="border-2 border-[#B84A14] bg-[#FDF3EC] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] text-neutral-600 uppercase font-bold block">
-                Date sélectionnée :
-              </span>
-              <p className="text-base font-extrabold text-neutral-900 capitalize">
-                {formatDateFr(selectedDate)}
-              </p>
+              <span className="text-[10px] text-neutral-600 font-bold block">Date choisie</span>
+              <p className="text-base font-bold text-neutral-900 capitalize">{formatDateFr(selectedDate)}</p>
             </div>
 
             <button
               ref={ctaButtonRef}
               type="button"
               onClick={onNext}
-              className="flex items-center justify-center gap-2 border border-[#B84A14] bg-[#B84A14] px-5 py-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#9E3E0F] cursor-pointer transition-colors shadow-xs"
+              className="flex items-center justify-center gap-2 border border-[#B84A14] bg-[#B84A14] px-5 py-3 text-xs font-bold text-white hover:bg-[#9E3E0F] cursor-pointer transition-colors shadow-xs"
             >
-              <span>Choisir mon créneau horaire</span>
+              <span>Choisir l'heure</span>
               <ArrowRight className="w-4 h-4 text-white" />
             </button>
           </div>
@@ -259,10 +236,10 @@ export const Step3Date: React.FC<Step3DateProps> = ({
           <button
             type="button"
             onClick={onPrev}
-            className="flex items-center gap-1.5 border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold uppercase text-neutral-800 hover:bg-neutral-100 cursor-pointer"
+            className="flex items-center gap-1.5 border border-neutral-300 bg-white px-4 py-2.5 text-xs font-bold text-neutral-800 hover:bg-neutral-100 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 text-[#B84A14]" />
-            <span>Précédent</span>
+            <span>Étape précédente</span>
           </button>
         </div>
       </div>

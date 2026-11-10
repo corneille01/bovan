@@ -8,11 +8,7 @@ interface Step1ModeProps {
   onNext: () => void;
 }
 
-export const Step1Mode: React.FC<Step1ModeProps> = ({
-  selectedMode,
-  onSelectMode,
-  onNext
-}) => {
+export const Step1Mode: React.FC<Step1ModeProps> = ({ selectedMode, onSelectMode, onNext }) => {
   const continueBtnRef = useRef<HTMLButtonElement>(null);
 
   const handleSelect = (mode: BookingMode) => {
@@ -28,22 +24,20 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
       {/* Studio Banner & High-intent SEO Header - Clean Verticality of H1 */}
       <div className="border border-neutral-300 bg-white p-6 shadow-xs">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          <div className="lg:col-span-8 space-y-3">
-            <h1 className="text-2xl md:text-3xl font-black text-neutral-900 tracking-tight leading-tight">
-              Studio OCD Live Lomé - Réservation de Live Streaming Commerçants House of Challenge
-            </h1>
-            
+          <div className="min-w-0 lg:col-span-8 space-y-3">
+            <h1 className="break-words text-2xl md:text-3xl font-bold text-neutral-900 leading-tight">Réservez votre live au studio OCD Live</h1>
+
             <p className="text-sm text-neutral-600 leading-relaxed max-w-2xl">
-              Diffusez vos articles, votre numéro WhatsApp et vos offres de vente en direct devant des dizaines de milliers d'acheteurs sur TikTok et Facebook.
+              Présentez vos articles et affichez votre numéro WhatsApp en direct sur TikTok et Facebook.
               <strong className="text-neutral-900"> « Le marketing avant la vente. »</strong>
             </p>
 
-            <div className="pt-2 flex flex-wrap gap-4 text-xs text-neutral-600">
-              <span className="flex items-center gap-1.5 font-semibold text-neutral-800">
-                <span className="text-[#D96528]">■</span> 1 seul live à la fois (zéro chevauchement de créneau)
+            <div className="pt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-neutral-600">
+              <span className="flex min-w-0 items-start gap-1.5 font-semibold text-neutral-800">
+                <span className="text-[#B84A14]">■</span> Un seul live à la fois, sans chevauchement de créneau.
               </span>
-              <span className="flex items-center gap-1.5 font-semibold text-neutral-800">
-                <span className="text-[#D96528]">■</span> Assistance régie et incrustation en continu de votre contact WhatsApp
+              <span className="flex min-w-0 items-start gap-1.5 font-semibold text-neutral-800">
+                <span className="text-[#B84A14]">■</span> L'équipe du studio affiche votre numéro WhatsApp pendant tout le live.
               </span>
             </div>
           </div>
@@ -69,12 +63,8 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
       {/* Main Choice Section - Clean Verticality of H2 */}
       <div className="bg-white border border-neutral-300 p-6 shadow-xs">
         <div className="border-b border-neutral-200 pb-4 mb-6">
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
-            Mode de déroulement de votre live : Présentiel à Lomé ou À distance
-          </h2>
-          <p className="text-xs text-neutral-600 mt-1">
-            Sélectionnez votre formule de présence : venez directement au studio House of Challenge à Lomé ou intervenez à distance en duplex depuis votre boutique ou atelier partout en Afrique et dans le monde.
-          </p>
+          <h2 className="text-xl font-bold text-neutral-900 ">Choisissez comment vous passez en direct</h2>
+          <p className="text-xs text-neutral-600 mt-1">Venez au studio à Lomé, ou intervenez à distance depuis votre boutique ou votre atelier.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -83,11 +73,11 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
             onClick={() => handleSelect('presentiel')}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect('presentiel'); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') handleSelect('presentiel');
+            }}
             className={`border-2 p-6 cursor-pointer transition-all flex flex-col justify-between ${
-              selectedMode === 'presentiel'
-                ? 'border-[#B84A14] bg-[#FDF3EC] ring-1 ring-[#B84A14]'
-                : 'border-neutral-300 bg-white hover:border-neutral-400'
+              selectedMode === 'presentiel' ? 'border-[#B84A14] bg-[#FDF3EC] ring-1 ring-[#B84A14]' : 'border-neutral-300 bg-white hover:border-neutral-400'
             }`}
           >
             <div>
@@ -96,40 +86,34 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
                   <MapPin className="w-6 h-6 text-[#B84A14]" />
                 </div>
                 {selectedMode === 'presentiel' && (
-                  <span className="border border-[#B84A14] bg-[#B84A14] text-white px-2.5 py-1 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span className="border border-[#B84A14] bg-[#B84A14] text-white px-2.5 py-1 text-xs font-bold flex items-center gap-1">
                     <Check className="w-3.5 h-3.5" /> Sélectionné
                   </span>
                 )}
               </div>
 
-              <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                En présentiel au Studio de Lomé (Togo)
-              </h3>
-              
-              <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                Vous venez physiquement au studio de House of Challenge à Lomé avec vos échantillons, vos tenues ou vos créations culinaires.
-              </p>
+              <h3 className="text-lg font-bold text-neutral-900 mb-2">En présentiel au studio de Lomé</h3>
+
+              <p className="text-xs text-neutral-600 leading-relaxed mb-4">Vous venez au studio de Lomé avec vos produits, vos tenues ou vos plats.</p>
 
               <ul className="space-y-2 text-xs text-neutral-700 border-t border-neutral-200 pt-4">
                 <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Plateau broadcast éclairé avec le logo lumineux officiel OCD Live</span>
+                  <Check className="w-4 h-4 text-[#B84A14] shrink-0 mt-0.5" />
+                  <span>Vous passez en direct sur un plateau éclairé aux couleurs d'OCD Live.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Cadreur et régie audio-vidéo dédiés pendant toute la session</span>
+                  <Check className="w-4 h-4 text-[#B84A14] shrink-0 mt-0.5" />
+                  <span>Un cadreur et un technicien son et image vous accompagnent pendant toute la session.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Idéal pour les commerçants, créateurs de mode et restaurateurs du Grand Lomé</span>
+                  <Check className="w-4 h-4 text-[#B84A14] shrink-0 mt-0.5" />
+                  <span>Ce choix convient aux commerçants, créateurs de mode et restaurateurs du Grand Lomé.</span>
                 </li>
               </ul>
             </div>
 
             <div className="mt-6 pt-4 border-t border-neutral-200">
-              <span className="text-xs font-bold text-neutral-800 uppercase tracking-wide">
-                Localisation : Lomé, Togo
-              </span>
+              <span className="text-xs font-bold text-neutral-800">Lieu : Lomé, Togo</span>
             </div>
           </div>
 
@@ -138,11 +122,11 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
             onClick={() => handleSelect('distance')}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect('distance'); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') handleSelect('distance');
+            }}
             className={`border-2 p-6 cursor-pointer transition-all flex flex-col justify-between ${
-              selectedMode === 'distance'
-                ? 'border-[#B84A14] bg-[#FDF3EC] ring-1 ring-[#B84A14]'
-                : 'border-neutral-300 bg-white hover:border-neutral-400'
+              selectedMode === 'distance' ? 'border-[#B84A14] bg-[#FDF3EC] ring-1 ring-[#B84A14]' : 'border-neutral-300 bg-white hover:border-neutral-400'
             }`}
           >
             <div>
@@ -151,40 +135,36 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
                   <Globe className="w-6 h-6 text-[#B84A14]" />
                 </div>
                 {selectedMode === 'distance' && (
-                  <span className="border border-[#B84A14] bg-[#B84A14] text-white px-2.5 py-1 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span className="border border-[#B84A14] bg-[#B84A14] text-white px-2.5 py-1 text-xs font-bold flex items-center gap-1">
                     <Check className="w-3.5 h-3.5" /> Sélectionné
                   </span>
                 )}
               </div>
 
-              <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                À distance en duplex (Afrique & Diaspora Monde)
-              </h3>
-              
+              <h3 className="text-lg font-bold text-neutral-900 mb-2">À distance depuis chez vous</h3>
+
               <p className="text-xs text-neutral-600 leading-relaxed mb-4">
-                Vous restez dans votre boutique, atelier ou à domicile. Une assistante plateau au studio de Lomé relaie et présente vos offres en direct.
+                Vous restez dans votre boutique, votre atelier ou chez vous. Une animatrice au studio de Lomé présente vos offres en direct.
               </p>
 
               <ul className="space-y-2 text-xs text-neutral-700 border-t border-neutral-200 pt-4">
                 <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Assistante régie incluse à Lomé pour animer et présenter vos produits</span>
+                  <Check className="w-4 h-4 text-[#B84A14] shrink-0 mt-0.5" />
+                  <span>Une animatrice du studio présente vos produits avec vous.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Liaison duplex haute définition via votre smartphone (4G / Fibre / Wifi)</span>
+                  <Check className="w-4 h-4 text-[#B84A14] shrink-0 mt-0.5" />
+                  <span>Vous vous connectez avec votre smartphone en 4G ou en Wifi.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Parfait pour la diaspora et la sous-région (Côte d'Ivoire, Bénin, France, etc.)</span>
+                  <Check className="w-4 h-4 text-[#B84A14] shrink-0 mt-0.5" />
+                  <span>Ce choix convient si vous êtes hors du Togo, par exemple en Côte d'Ivoire, au Bénin ou en France.</span>
                 </li>
               </ul>
             </div>
 
             <div className="mt-6 pt-4 border-t border-neutral-200">
-              <span className="text-xs font-bold text-neutral-800 uppercase tracking-wide">
-                Portée : International / Diaspora
-              </span>
+              <span className="text-xs font-bold text-neutral-800">Lieu : où vous voulez</span>
             </div>
           </div>
         </div>
@@ -195,10 +175,10 @@ export const Step1Mode: React.FC<Step1ModeProps> = ({
             ref={continueBtnRef}
             type="button"
             onClick={onNext}
-            className="flex items-center gap-2 border border-neutral-900 bg-neutral-900 px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white hover:bg-neutral-800 active:bg-black focus:ring-2 focus:ring-[#B84A14] transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-2 border border-neutral-900 bg-neutral-900 px-6 py-3.5 text-sm font-bold text-white hover:bg-neutral-800 active:bg-black focus:ring-2 focus:ring-[#B84A14] transition-all cursor-pointer shadow-sm"
           >
-            <span>Continuer vers le choix du Pack</span>
-            <ArrowRight className="w-4 h-4 text-[#D96528]" />
+            <span>Choisir mon pack</span>
+            <ArrowRight className="w-4 h-4 text-[#B84A14]" />
           </button>
         </div>
       </div>

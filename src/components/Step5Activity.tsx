@@ -25,43 +25,42 @@ interface Step5ActivityProps {
   currentUser: UserAccount | null;
 }
 
-export const Step5Activity: React.FC<Step5ActivityProps> = ({
-  mode,
-  initialData,
-  onSubmitData,
-  onPrev,
-  currentUser
-}) => {
-  const [formData, setFormData] = useState<ActivityFormData>(initialData);
+export const Step5Activity: React.FC<Step5ActivityProps> = ({ initialData, onSubmitData, onPrev, currentUser }) => {
+  const [formData, setFormData] = useState<ActivityFormData>({
+    ...initialData,
+    country: initialData.country || 'Togo',
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
 
     if (!formData.fullName.trim()) {
-      errs.fullName = 'Le nom et prénom du responsable sont obligatoires.';
+      errs.fullName = 'Indiquez votre nom et prénom.';
     }
     if (!formData.phone.trim()) {
-      errs.phone = 'Le numéro WhatsApp de contact est obligatoire.';
-    } else if (formData.phone.replace(/\D/g, '').length < 6) {
-      errs.phone = 'Veuillez saisir un numéro de téléphone valide.';
+      errs.phone = 'Indiquez votre numéro WhatsApp.';
+    } else if (formData.phone.replace(/\D/g, '').length < 8) {
+      errs.phone = 'Le numéro doit avoir au moins 8 chiffres.';
     }
     if (!formData.email.trim()) {
-      errs.email = 'L’adresse e-mail est obligatoire pour l’envoi de la facture et de la fiche régie.';
-    } else if (!formData.email.includes('@') || !formData.email.includes('.')) {
-      errs.email = 'Veuillez renseigner une adresse e-mail valide.';
+      errs.email = 'Indiquez votre adresse e-mail.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errs.email = "Cette adresse e-mail n'est pas valide.";
     }
     if (!formData.businessName.trim()) {
-      errs.businessName = 'Le nom commercial de votre marque / commerce est obligatoire.';
+      errs.businessName = 'Indiquez le nom de votre boutique ou de votre marque.';
     }
     if (!formData.productsDescription.trim()) {
-      errs.productsDescription = 'Veuillez décrire brièvement les produits ou services présentés.';
+      errs.productsDescription = 'Décrivez les produits ou services que vous présentez.';
     }
     if (!formData.onScreenPhone.trim()) {
-      errs.onScreenPhone = 'Le numéro WhatsApp à afficher à l’écran est obligatoire pour vos clients.';
+      errs.onScreenPhone = 'Indiquez le numéro à afficher pendant le live.';
+    } else if (formData.onScreenPhone.replace(/\D/g, '').length < 8) {
+      errs.onScreenPhone = 'Le numéro doit avoir au moins 8 chiffres.';
     }
-    if (mode === 'distance' && !formData.country.trim()) {
-      errs.country = 'Pour un live à distance, votre pays de diffusion est obligatoire.';
+    if (!formData.country.trim()) {
+      errs.country = 'Choisissez votre pays.';
     }
 
     setErrors(errs);
@@ -71,7 +70,13 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmitData(formData);
+      onSubmitData({
+        ...formData,
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        businessName: formData.businessName.trim(),
+        onScreenPhone: formData.onScreenPhone.trim(),
+      });
     }
   };
 
@@ -80,19 +85,17 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
       <form onSubmit={handleSubmit} className="bg-white border border-neutral-300 p-6 shadow-xs">
         {/* Header - Clean Verticality of H2 */}
         <div className="border-b border-neutral-200 pb-4 mb-6">
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight">
-            Fiche d'Activité Commerçant & Paramétrage Titrage Régie
-          </h2>
+          <h2 className="text-xl font-bold text-neutral-900 ">Vos informations</h2>
           <p className="text-xs text-neutral-600 mt-1">
-            Renseignez votre marque et vos coordonnées. La régie BOVAN incrustera en continu votre numéro WhatsApp à l'écran pour les spectateurs TikTok et Facebook.
+            Indiquez votre boutique et vos coordonnées. L'équipe du studio affiche votre numéro WhatsApp à l'écran pendant le live.
           </p>
 
           {currentUser && (
-            <div className="mt-3 bg-neutral-100 border border-neutral-300 px-3 py-2 text-xs text-neutral-700 flex items-center justify-between">
+            <div className="mt-3 bg-neutral-100 border border-neutral-300 px-3 py-2 text-xs text-neutral-700 flex flex-wrap items-center justify-between gap-2">
               <span>
-                Données synchronisées depuis votre compte commerçant : <strong>{currentUser.businessName}</strong>
+                Informations reprises de votre compte : <strong>{currentUser.businessName}</strong>
               </span>
-              <span className="text-[10px] uppercase font-bold text-emerald-700">✓ Pré-rempli</span>
+              <span className="text-[10px] font-bold text-[#9E3E0F]">Déjà rempli</span>
             </div>
           )}
         </div>
@@ -102,7 +105,7 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
           <div className="mb-6 border-2 border-red-500 bg-red-50 p-4 text-xs text-red-800" role="alert">
             <div className="flex items-center gap-2 font-bold mb-1">
               <AlertCircle className="w-4 h-4 text-red-600" />
-              <span>Veuillez corriger les {Object.keys(errors).length} champs signalés ci-dessous :</span>
+              <span>Corrigez les champs signalés ci-dessous :</span>
             </div>
             <ul className="list-disc pl-5 space-y-0.5">
               {Object.values(errors).map((err, i) => (
@@ -114,14 +117,14 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
 
         <div className="space-y-6 text-xs">
           {/* Section 1: Identité du Commerçant */}
-          <div className="border border-neutral-200 p-4 bg-neutral-50/50">
-            <h3 className="text-sm font-bold uppercase text-neutral-900 mb-4 pb-2 border-b border-neutral-200 flex items-center gap-2">
+          <div className="border border-neutral-200 p-4 bg-white">
+            <h3 className="text-sm font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-200 flex items-center gap-2">
               <User className="w-4 h-4 text-[#B84A14]" />
-              <span>1. Responsable & Contact Officiel</span>
+              <span>Vos coordonnées</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="min-w-0">
                 <label className="block font-bold text-neutral-800 mb-1" htmlFor="fullName">
                   Nom et prénom du responsable <span className="text-red-600">*</span>
                 </label>
@@ -138,9 +141,9 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
                 {errors.fullName && <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.fullName}</p>}
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label className="block font-bold text-neutral-800 mb-1" htmlFor="email">
-                  Adresse e-mail (reçu & notifications) <span className="text-red-600">*</span>
+                  Adresse e-mail pour la confirmation <span className="text-red-600">*</span>
                 </label>
                 <input
                   id="email"
@@ -155,15 +158,15 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
                 {errors.email && <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.email}</p>}
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label className="block font-bold text-neutral-800 mb-1" htmlFor="phone">
-                  Numéro WhatsApp principal (réception code & régie) <span className="text-red-600">*</span>
+                  Votre numéro WhatsApp <span className="text-red-600">*</span>
                 </label>
                 <div className="flex flex-wrap sm:flex-nowrap gap-2">
                   <select
                     value={formData.countryCode}
                     onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
-                    className="w-full sm:w-auto min-w-[130px] p-2.5 border border-neutral-300 bg-neutral-100 text-xs font-bold font-mono text-neutral-800 focus:border-[#B84A14] focus:outline-none"
+                    className="w-full sm:w-auto min-w-0 sm:min-w-[130px] p-2.5 border border-neutral-300 bg-neutral-100 text-xs font-bold tabular-nums text-neutral-800 focus:border-[#B84A14] focus:outline-none"
                     aria-label="Indicatif téléphonique"
                   >
                     {COUNTRY_CODES.map((c) => (
@@ -178,7 +181,7 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="Ex : 90 12 34 56"
-                    className={`w-full sm:flex-1 p-2.5 border bg-white text-sm font-mono text-neutral-900 focus:outline-none ${
+                    className={`w-full sm:flex-1 p-2.5 border bg-white text-sm tabular-nums text-neutral-900 focus:outline-none ${
                       errors.phone ? 'border-red-500 bg-red-50/30' : 'border-neutral-300 focus:border-[#B84A14]'
                     }`}
                   />
@@ -186,27 +189,27 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
                 {errors.phone && <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.phone}</p>}
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label className="block font-bold text-neutral-800 mb-1" htmlFor="country">
-                  Pays de localisation {mode === 'distance' ? <span className="text-red-600">*</span> : '(Optionnel)'}
+                  Votre pays <span className="text-red-600">*</span>
                 </label>
                 <select
                   id="country"
                   value={formData.country}
                   onChange={(e) => {
                     const selectedVal = e.target.value;
-                    const found = ALL_COUNTRIES.find(c => c.name === selectedVal);
+                    const found = ALL_COUNTRIES.find((c) => c.name === selectedVal);
                     setFormData({
                       ...formData,
                       country: selectedVal,
-                      countryCode: found ? found.code : formData.countryCode
+                      countryCode: found ? found.code : formData.countryCode,
                     });
                   }}
                   className={`w-full p-2.5 border bg-white text-sm text-neutral-900 focus:outline-none ${
                     errors.country ? 'border-red-500 bg-red-50/30' : 'border-neutral-300 focus:border-[#B84A14]'
                   }`}
                 >
-                  <option value="">-- Sélectionnez votre pays --</option>
+                  <option value="">Choisissez votre pays</option>
                   {ALL_COUNTRIES.map((c) => (
                     <option key={c.iso} value={c.name}>
                       {c.flag} {c.name} ({c.code})
@@ -219,16 +222,16 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
           </div>
 
           {/* Section 2: Votre Entreprise / Marque */}
-          <div className="border border-neutral-200 p-4 bg-neutral-50/50">
-            <h3 className="text-sm font-bold uppercase text-neutral-900 mb-4 pb-2 border-b border-neutral-200 flex items-center gap-2">
+          <div className="border border-neutral-200 p-4 bg-white">
+            <h3 className="text-sm font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-200 flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#B84A14]" />
-              <span>2. Entreprise & Affichage Régie</span>
+              <span>Votre activité</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
+              <div className="min-w-0">
                 <label className="block font-bold text-neutral-800 mb-1" htmlFor="businessName">
-                  Nom commercial de la boutique / marque (« OCD ») <span className="text-red-600">*</span>
+                  Nom de votre boutique ou de votre marque <span className="text-red-600">*</span>
                 </label>
                 <input
                   id="businessName"
@@ -243,7 +246,7 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
                 {errors.businessName && <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.businessName}</p>}
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <label className="block font-bold text-neutral-800 mb-1" htmlFor="sector">
                   Secteur d'activité <span className="text-red-600">*</span>
                 </label>
@@ -264,34 +267,32 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
 
             <div className="mb-4">
               <label className="block font-bold text-neutral-800 mb-1" htmlFor="onScreenPhone">
-                Numéro WhatsApp public à afficher en direct pendant le live <span className="text-red-600">*</span>
+                Numéro à afficher pendant le live <span className="text-red-600">*</span>
               </label>
               <input
                 id="onScreenPhone"
                 type="text"
                 value={formData.onScreenPhone}
                 onChange={(e) => setFormData({ ...formData, onScreenPhone: e.target.value })}
-                placeholder="Ex : +228 90 12 34 56 (Visible par tous les spectateurs TikTok / Facebook)"
-                className={`w-full p-2.5 border bg-white text-sm font-mono text-neutral-900 focus:outline-none ${
+                placeholder="Ex : +228 90 12 34 56"
+                className={`w-full p-2.5 border bg-white text-sm tabular-nums text-neutral-900 focus:outline-none ${
                   errors.onScreenPhone ? 'border-red-500 bg-red-50/30' : 'border-neutral-300 focus:border-[#B84A14]'
                 }`}
               />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                Ce numéro sera incrusté en continu dans le bandeau inférieur de la vidéo par la régie pour que les clients vous contactent directement.
-              </p>
+              <p className="text-[11px] text-neutral-500 mt-1">Ce numéro sera visible par tous les spectateurs, en bas de l'écran, pendant tout le live.</p>
               {errors.onScreenPhone && <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.onScreenPhone}</p>}
             </div>
 
             <div className="mb-4">
               <label className="block font-bold text-neutral-800 mb-1" htmlFor="productsDescription">
-                Description des produits / services phares présentés <span className="text-red-600">*</span>
+                Produits ou services présentés <span className="text-red-600">*</span>
               </label>
               <textarea
                 id="productsDescription"
                 rows={3}
                 value={formData.productsDescription}
                 onChange={(e) => setFormData({ ...formData, productsDescription: e.target.value })}
-                placeholder="Ex : Robes wax brodées, chemises lin homme, accessoires perlés faits main. Tailles S à 3XL. Prix promo spécial live..."
+                placeholder="Ex : robes en wax, chemises en lin, accessoires perlés. Tailles S à 3XL."
                 className={`w-full p-2.5 border bg-white text-sm text-neutral-900 focus:outline-none ${
                   errors.productsDescription ? 'border-red-500 bg-red-50/30' : 'border-neutral-300 focus:border-[#B84A14]'
                 }`}
@@ -301,14 +302,14 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
 
             <div>
               <label className="block font-bold text-neutral-800 mb-1" htmlFor="liveGoal">
-                Objectif prioritaire du live (Philosophie OCD : Le marketing avant la vente)
+                Objectif de votre live (facultatif)
               </label>
               <input
                 id="liveGoal"
                 type="text"
                 value={formData.liveGoal}
                 onChange={(e) => setFormData({ ...formData, liveGoal: e.target.value })}
-                placeholder="Ex : Placer mon adresse boutique à Lomé, acquérir 50 nouveaux contacts WhatsApp qualifiés..."
+                placeholder="Ex : faire connaître ma boutique à Lomé et recevoir des messages WhatsApp."
                 className="w-full p-2.5 border border-neutral-300 bg-white text-sm text-neutral-900 focus:border-[#B84A14] focus:outline-none"
               />
             </div>
@@ -320,18 +321,18 @@ export const Step5Activity: React.FC<Step5ActivityProps> = ({
           <button
             type="button"
             onClick={onPrev}
-            className="flex items-center justify-center gap-2 border border-neutral-300 bg-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-neutral-700 hover:bg-neutral-100 transition-colors"
+            className="flex items-center justify-center gap-2 border border-neutral-300 bg-white px-5 py-2.5 text-xs font-bold text-neutral-700 hover:bg-neutral-100 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 text-neutral-500" />
-            <span>Retour au Créneau</span>
+            <span>Retour au créneau</span>
           </button>
 
           <button
             type="submit"
-            className="flex items-center justify-center gap-2 border border-neutral-900 bg-neutral-900 px-6 py-3 text-xs font-bold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors"
+            className="flex items-center justify-center gap-2 border border-neutral-900 bg-neutral-900 px-6 py-3 text-xs font-bold text-white hover:bg-neutral-800 transition-colors"
           >
-            <span>Continuer vers l'Étape de Paiement</span>
-            <ArrowRight className="w-4 h-4 text-[#D96528]" />
+            <span>Continuer vers le paiement</span>
+            <ArrowRight className="w-4 h-4 text-[#B84A14]" />
           </button>
         </div>
       </form>

@@ -34,17 +34,18 @@ export type ActivitySector =
   | 'autre';
 
 export type BookingStatus = 
-  | 'pending'    // À confirmer par la régie
+  | 'pending'    // À confirmer par le studio
   | 'confirmed'  // Confirmée
   | 'completed'  // Réalisée
   | 'cancelled';  // Annulée
 
 export type PaymentMethod = 
-  | 'tmoney' 
-  | 'flooz' 
+  | 'tmoney'
+  | 'flooz'
   | 'mtn_momo'
-  | 'card' 
-  | 'wave_orange' 
+  | 'onsite'
+  | 'card'
+  | 'wave_orange'
   | 'bank_transfer';
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
@@ -103,7 +104,6 @@ export interface UserAccount {
   onScreenPhone: string;
   country: string;
   role?: 'client' | 'regie_admin';
-  password?: string;
   createdAt: string;
   lastLoginAt: string;
   liveGoal?: string;
@@ -119,4 +119,5 @@ export interface NotificationLog {
   subject: string;
   content: string;
   bookingRef: string;
+  status?: 'sent' | 'demo' | 'failed' | 'not_configured';
 }
